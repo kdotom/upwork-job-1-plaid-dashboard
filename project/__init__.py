@@ -1,9 +1,27 @@
+import plaid
+from plaid.api import plaid_api
+
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 
+
 # init SQLAlchemy so we can use it later in our models
 db = SQLAlchemy()
+
+CLIENT_ID = "667f243d796a36001948fede"
+# sandbox
+SECRET_KEY = "4a2c405567473f9093161a4aa5fa28"
+
+configuration = plaid.Configuration(
+  host=plaid.Environment.Sandbox,
+  api_key={
+    'clientId': CLIENT_ID,
+    'secret': SECRET_KEY,
+  }
+)
+api_client = plaid.ApiClient(configuration)
+client = plaid_api.PlaidApi(api_client)
 
 def create_app():
     app = Flask(__name__)
