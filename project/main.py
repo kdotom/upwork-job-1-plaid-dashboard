@@ -10,6 +10,10 @@ from flask_login import login_required, current_user
 
 import jsonpickle
 
+from .models import AccessToken
+
+from .util import get_account_info
+
 from . import db
 from . import client, api_client
 
@@ -18,16 +22,6 @@ main = Blueprint('main', __name__)
 @main.route('/')
 def index():
     return render_template('index.html')
-
-@main.route('/profile')
-@login_required
-def profile():
-    return render_template('profile.html', name=current_user.name)
-
-@main.route('/link_account')
-@login_required
-def link_account():
-    return render_template('link_account.html')
 
 @main.route("/create_link_token", methods=['POST'])
 @login_required
@@ -66,16 +60,66 @@ def exchange_public_token():
     access_token = response['access_token']
     item_id = response['item_id']
 
+    already_found = db.session.query(AccessToken).get((current_user.id, access_token))
+    
+    if already_found:
+        # We already have this token for this user,
+        # no need to add it again
+        return jsonify({'public_token_exchange': 'complete'})
+
+
+    new_access_token = AccessToken(user_id = current_user.id,
+                                   access_token=access_token, 
+                                   item_id=item_id)
+    
+    db.session.add(new_access_token)
+    db.session.commit()
+
     return jsonify({'public_token_exchange': 'complete'})
 
 @main.route('/accounts_balance_get', methods=['GET'])
 @login_required
 def accounts_balance_get():
-    global access_token
-    # Pull real-time balance information for each account associated
-    # with the Item
-    request = AccountsBalanceGetRequest(access_token=access_token)
-    response = client.accounts_balance_get(request)
-    accounts = response['accounts']
+    query = db.session.query(AccessToken).filter(AccessToken.user_id == current_user.id)
+    results = query.all()
 
-    return jsonpickle.encode(accounts)
+    account_info_list = []
+
+    for result in results:
+        # Pull real-time balance information for each account associated
+        # with the Item
+        request = AccountsBalanceGetRequest(access_token=result.access_token)
+        response = client.accounts_balance_get(request)
+        accounts = response['accounts']
+
+        for account in accounts:
+            account_info = get_account_info(account)
+            account_info_list.append(account_info)
+            
+    return render_template('dashboard.html', accounts=account_info_list)
+
+# Clear the entire database
+@main.route('/clear_database', methods=['GET'])
+@login_required
+def clear_database():
+    db.drop_all()
+    db.create_all()
+    db.session.commit()
+    return "Database cleared"
+
+@main.route('/clear_user_tokens', methods=['GET'])
+@login_required
+def clear_user_tokens():
+    query = db.session.query(AccessToken).filter(AccessToken.user_id == current_user.id)
+    query.delete()
+
+    # Commit the changes to the database
+    db.session.commit()
+
+    return "User tokens cleared"
+
+
+@main.route('/link_account', methods=['GET'])
+@login_required
+def link_account():
+    return render_template('link_account.html')

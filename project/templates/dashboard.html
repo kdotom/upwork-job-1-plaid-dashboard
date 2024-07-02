@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block head %}
+{% endblock %}
+
+{% block content %}
+
+<table class="table">
+    <thead>
+    <tr>
+      <th>Name</th>
+      <th>Available Balance</th>
+      <th>Current Balance</th>
+      <th>Balance Limit</th>
+    </tr>
+    </thead>
+  {% for account in accounts %}
+    <tfoot>
+    <tr>
+        <td>{{ account.name }}</td>
+        <td>{{ account.available }}</td>
+        <td>{{ account.current }}</td>
+        <td>{{ account.limit }}</td>
+    </tr>
+    </tfoot>
+  {% endfor %}
+
+</table>
+{% endblock %}
