@@ -42,18 +42,14 @@ def create_link_token():
     # Send the data to the client
     return jsonify(response.to_dict())
 
-access_token = None
-item_id = None
-
 @main.route('/exchange_public_token', methods=['POST'])
 @login_required
 def exchange_public_token():
-    global access_token, request
     public_token = request.form['public_token']
-    request = ItemPublicTokenExchangeRequest(
+    item_request = ItemPublicTokenExchangeRequest(
       public_token=public_token
     )
-    response = client.item_public_token_exchange(request)
+    response = client.item_public_token_exchange(item_request)
 
     # These values should be saved to a persistent database and
     # associated with the currently signed-in user
