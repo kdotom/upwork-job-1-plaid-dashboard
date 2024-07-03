@@ -4,6 +4,7 @@ from plaid.model.products import Products
 from plaid.model.country_code import CountryCode
 from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchangeRequest
 from plaid.model.accounts_balance_get_request import AccountsBalanceGetRequest
+from plaid.model.institutions_get_by_id_request import InstitutionsGetByIdRequest
 
 from flask import Blueprint, render_template, jsonify, request
 from flask_login import login_required, current_user
@@ -30,7 +31,7 @@ def create_link_token():
     client_user_id = str(current_user.id)
     # Create a link_token for the given user
     request = LinkTokenCreateRequest(
-            products=[Products("auth")],
+            products=[Products("transactions")],
             client_name="Plaid Dashboard",
             country_codes=[CountryCode('US')],
             language='en',
@@ -88,9 +89,22 @@ def accounts_balance_get():
         response = client.accounts_balance_get(request)
         accounts = response['accounts']
 
+        ins_request = InstitutionsGetByIdRequest(
+                        institution_id=response["item"]["institution_id"],
+                        country_codes=[CountryCode('US')]
+                        )
+        
+        ins_response = client.institutions_get_by_id(ins_request)
+        institution_name = ins_response.institution.name
+
         for account in accounts:
             account_info = get_account_info(account)
+            account_info.institution_name = institution_name
+
             account_info_list.append(account_info)
+    
+    if len(account_info_list) == 0:
+        return render_template('simple_message.html', message="No accounts linked")
             
     return render_template('dashboard.html', accounts=account_info_list)
 
@@ -112,7 +126,7 @@ def clear_user_tokens():
     # Commit the changes to the database
     db.session.commit()
 
-    return "User tokens cleared"
+    return render_template('simple_message.html', message="Cleared accounts")
 
 
 @main.route('/link_account', methods=['GET'])
