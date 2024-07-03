@@ -5,7 +5,7 @@
 
 {% block content %}
 
-<table class="table">
+<table class="table is-bordered is-fullwidth is-striped is-hoverable">
     <thead>
     <tr>
       <th>Account Name</th>
@@ -17,7 +17,7 @@
     </tr>
     </thead>
   {% for account in accounts %}
-    <tfoot>
+    <tbody>
     <tr>
         <td>{{ account.name }}</td>
         <td>{{ account.institution_name }}</td>
@@ -26,7 +26,7 @@
         <td>{{ account.limit }}</td>
         <td>{{ account.utilization }}</td>
     </tr>
-    </tfoot>
+    </tbody>
   {% endfor %}
 
 </table>
